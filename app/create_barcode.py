@@ -33,11 +33,20 @@ class Book(db.Model):
 def go():
     books = Book.query.all()
     for book in books:
-        data_num = random.randint(100000000000, 999999999999)
-        data = str(data_num)
+        upc_base = [random.randint(0, 9) for _ in range(11)]
+
+        # Calculate the check digit
+        odd_sum = sum(upc_base[i] for i in range(0, 11, 2))
+        even_sum = sum(upc_base[i] for i in range(1, 11, 2))
+        total_sum = odd_sum * 3 + even_sum
+        check_digit = (10 - (total_sum % 10)) % 10
+
+        upc_base.append(check_digit)
+        data = ''.join(map(str, upc_base))
         barcode_class = barcode.get_barcode_class('upc')
+
         b = barcode_class(data, writer=ImageWriter)
-        b.save('data/barcode_{product_id}_{barcode}'.format(product_id=book.book_id,barcode=data_num))
+        b.save('data/barcode_{product_id}_{barcode}'.format(product_id=book.book_id,barcode=data))
         book.barcode = data
     db.session.commit()
     return "!2"
